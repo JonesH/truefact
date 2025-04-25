@@ -45,7 +45,7 @@ async def ensure_agent_registration() -> bool:
         if agent_identifier and wallet_vkey:
             # Using agent identifier to check registration
             status = await agent.check_registration_status(wallet_vkey)
-            if status.get("exists", False):
+            if status.get("agentIdentifier"):
                 logger.info("Agent already registered")
                 return True
             else:

@@ -2,6 +2,8 @@ import os
 import uuid
 import logging
 from typing import Dict, Any, Callable, Awaitable
+
+import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -73,7 +75,7 @@ async def handle_payment_status(job_id: str, payment_id: str) -> None:
         logger.info(f"Processing input data: {jobs[job_id]['input_data']}")
 
         # Execute the AI task 
-        result = await execute_ai_task(jobs[job_id]["input_data"]["text"])
+        result = await execute_ai_task(jobs[job_id]["input_data"]["text"], job_id=job_id)
         logger.info(f"AI task completed for job {job_id}")
         
         # Mark payment as completed on Masumi
@@ -100,12 +102,19 @@ async def handle_payment_status(job_id: str, payment_id: str) -> None:
             payment_instances[job_id].stop_status_monitoring()
             del payment_instances[job_id]
 
-async def execute_ai_task(input_text: str) -> str:
+async def execute_ai_task(input_text: str, job_id: str) -> dict:
     """Execute the AI task with the given input"""
     # In a real implementation, this would call your AI service
     # For now, we'll return a simple confirmation
     logger.info(f"Processing AI task with input: {input_text[:100]}...")
-    return f"Processed: {input_text[:100]}..."
+    webhook_url = os.getenv("N8N_WEBHOOK_URL")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(webhook_url, json=dict(text=input_text, job_id=job_id))
+        response.raise_for_status()  # abort on HTTP errors
+        result = response.json()
+    return result
+
 
 # Implement required endpoints
 @app.post("/start_job")
