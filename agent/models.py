@@ -61,7 +61,7 @@ class Amount(BaseModel):
     """
     Payment amount model.
     """
-    amount: str
+    amount: int
     unit: str
 
 class StartJobResponse(BaseModel):
