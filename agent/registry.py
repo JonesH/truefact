@@ -41,7 +41,7 @@ async def ensure_agent_registration() -> bool:
         
         # Check if already registered
         wallet_vkey = os.getenv("SELLER_VKEY")
-        
+        print(f"agent_identifier: {agent_identifier}, wallet_vkey: {wallet_vkey}")
         if agent_identifier and wallet_vkey:
             # Using agent identifier to check registration
             status = await agent.check_registration_status(wallet_vkey)
