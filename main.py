@@ -7,7 +7,6 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent.models import StartJobRequest, JobStatus, InputSchema, AgentAvailability, HealthCheck
-from agent.services import handle_payment_status
 from agent.registry import ensure_agent_registration
 
 # Load environment variables
@@ -75,92 +74,7 @@ async def start_job(data: StartJobRequest) -> dict[str, Any]:
         payment_unit = os.getenv("PAYMENT_UNIT", "lovelace")
         amounts = [{"amount": payment_amount, "unit": payment_unit}]
 
-        import sys
-        if "pytest" in sys.modules:
-            payment_result = {
-                "blockchainIdentifier": f"mock-payment-{job_id}",
-                "submitResultTime": "2025-04-26T00:00:00.000Z",
-                "unlockTime": "2025-04-26T00:10:00.000Z",
-                "externalDisputeUnlockTime": "2025-04-26T01:00:00.000Z",
-                "agentIdentifier": agent_identifier,
-                "input_hash": "mock_hash"
-            }
-
-            # Initialize job tracking
-            jobs[job_id] = {
-                "status": "completed",
-                "payment_status": "completed",
-                "payment_id": payment_result["blockchainIdentifier"],
-                "input_data": data.input_data,
-                "result": {"raw": f"Test result for {input_text}"},
-                "identifier_from_purchaser": data.identifier_from_purchaser
-            }
-
-        else:
-            # Initialize payment infrastructure
-            from masumi.config import Config
-            from masumi.payment import Payment
-
-            config = Config(
-                payment_service_url=os.getenv("PAYMENT_SERVICE_URL"),
-                payment_api_key=os.getenv("PAYMENT_API_KEY")
-            )
-
-            payment = Payment(
-                agent_identifier=agent_identifier,
-                config=config,
-                identifier_from_purchaser=data.identifier_from_purchaser,
-                input_data=data.input_data
-            )
-
-            payment_request = await payment.create_payment_request()
-            payment_id = payment_request["data"]["blockchainIdentifier"]
-            payment.payment_ids.add(payment_id)
-
-            # Initialize job tracking
-            jobs[job_id] = {
-                "status": "awaiting_payment",
-                "payment_status": "pending",
-                "payment_id": payment_id,
-                "input_data": data.input_data,
-                "result": None,
-                "identifier_from_purchaser": data.identifier_from_purchaser
-            }
-
-            # Setup payment monitoring
-            payment_instances[job_id] = payment
-
-            async def payment_callback(pid: str) -> None:
-                from agent.services import execute_ai_task
-
-                try:
-                    logger.info(f"Payment {pid} completed for job {job_id}")
-                    jobs[job_id]["status"] = "running"
-
-                    result = await execute_ai_task(jobs[job_id]["input_data"])
-                    await payment.complete_payment(pid, result)
-
-                    jobs[job_id]["status"] = "completed"
-                    jobs[job_id]["payment_status"] = "completed"
-                    jobs[job_id]["result"] = result
-                except Exception as e:
-                    logger.error(f"Payment processing error: {e}", exc_info=True)
-                    jobs[job_id]["status"] = "failed"
-                    jobs[job_id]["error"] = str(e)
-                finally:
-                    payment.stop_status_monitoring()
-
-            await payment.start_status_monitoring(payment_callback)
-
-            # Setup response data
-            payment_result = {
-                "blockchainIdentifier": payment_id,
-                "submitResultTime": payment_request["data"]["submitResultTime"],
-                "unlockTime": payment_request["data"]["unlockTime"],
-                "externalDisputeUnlockTime": payment_request["data"]["externalDisputeUnlockTime"],
-                "agentIdentifier": agent_identifier,
-                "input_hash": payment.input_hash
-            }
+        # TODO: fix this claude
 
         # Return conformant response
         return {
