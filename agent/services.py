@@ -41,8 +41,7 @@ async def create_payment_request(job_id: str, input_data: Dict[str, str],
         )
         
         payment = Payment(
-            agent_identifier=os.getenv("AGENT_IDENTIFIER"),
-            amounts=[Amount(amount="1000000", unit="lovelace")],
+            agent_identifier=os.getenv("AGENT_IDENTIFIER", "demo-agent"),
             config=config,
             network=os.getenv("MASUMI_NETWORK", "Preprod"),
             identifier_from_purchaser=identifier_from_purchaser,
@@ -74,7 +73,7 @@ async def handle_payment_status(job_id: str, jobs: Dict[str, Dict[str, Any]]) ->
 
         # Create payment instance
         payment = Payment(
-            agent_identifier=os.getenv("AGENT_IDENTIFIER"),
+            agent_identifier=os.getenv("AGENT_IDENTIFIER", "demo-agent"),
             config=config,
             network=os.getenv("MASUMI_NETWORK", "Preprod"),
             identifier_from_purchaser=jobs[job_id]["identifier_from_purchaser"],

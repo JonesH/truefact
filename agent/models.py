@@ -8,8 +8,8 @@ class StartJobRequest(BaseModel):
     identifier_from_purchaser: str = Field(..., description="Identifier provided by the purchaser")
     input_data: Dict[str, str] = Field(..., description="Input data for the job")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "identifier_from_purchaser": "example_purchaser_123",
                 "input_data": {
@@ -17,6 +17,7 @@ class StartJobRequest(BaseModel):
                 }
             }
         }
+    }
 
 class JobStatus(BaseModel):
     """
