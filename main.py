@@ -1,13 +1,13 @@
 import os
 import uuid
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent.models import StartJobRequest, JobStatus, InputSchema, AgentAvailability, HealthCheck
-from agent.services import execute_ai_task, handle_payment_status
+from agent.services import handle_payment_status
 
 # Load environment variables
 load_dotenv(override=True)
@@ -21,9 +21,10 @@ logger = logging.getLogger("masumi-agent")
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Masumi Agent API",
+    title="Truefact AI Agent API",
     description="API for running AI agent tasks with Masumi payment integration",
-    version="1.0.0"
+    version="1.0.0",
+    servers=[{"url": f"https://{os.getenv('SERVER_NAME', 6666)}"}]
 )
 
 # Add CORS middleware
@@ -118,7 +119,7 @@ async def input_schema() -> InputSchema:
             {
                 "id": "text",
                 "type": "string",
-                "name": "Task Description",
+                "name": "Text",
                 "data": {
                     "description": "The text input for the AI task",
                     "placeholder": "Enter your task description here"
@@ -147,4 +148,4 @@ async def health() -> HealthCheck:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT", 6666))
