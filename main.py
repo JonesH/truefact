@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from agent.models import StartJobRequest, JobStatus, InputSchema, AgentAvailability, HealthCheck
 from agent.services import handle_payment_status
+from agent.registry import ensure_agent_registration
 
 # Load environment variables
 load_dotenv(override=True)
@@ -40,6 +41,14 @@ app.add_middleware(
 jobs = {}
 payment_instances = {}
 
+# Register startup event to check agent registration
+@app.on_event("startup")
+async def startup_event():
+    """Run at application startup to check and register agent if needed"""
+    logger.info("Starting Truefact AI Agent")
+    registered = await ensure_agent_registration()
+    logger.info(f"Agent registration status: {'Success' if registered else 'Failed'}")
+
 # Implement required endpoints
 @app.post("/start_job")
 async def start_job(data: StartJobRequest) -> Dict[str, Any]:
@@ -51,38 +60,39 @@ async def start_job(data: StartJobRequest) -> Dict[str, Any]:
         job_id = str(uuid.uuid4())
         agent_identifier = os.getenv("AGENT_IDENTIFIER", "demo-agent")
         
-        # For demo purposes, we'll just simulate payment
-        # In a real implementation, you would use:
-        # from masumi.config import Config
-        # from masumi.payment import Payment
-        
         # Initialize jobs dict with status
         jobs[job_id] = {
             "status": "awaiting_payment",
             "payment_status": "pending",
-            "payment_id": f"demo-payment-{job_id}",
             "input_data": data.input_data,
             "result": None,
             "identifier_from_purchaser": data.identifier_from_purchaser
         }
         
-        # Simulate payment with delayed execution
-        # In real implementation, use payment callback
+        # Create payment request using Masumi Payment Service
+        from agent.services import create_payment_request, handle_payment_status
+        payment_result = await create_payment_request(
+            job_id=job_id,
+            input_data=data.input_data,
+            identifier_from_purchaser=data.identifier_from_purchaser
+        )
+        
+        if not payment_result:
+            raise HTTPException(status_code=500, detail="Failed to create payment request")
+        
+        # Store payment info
+        jobs[job_id]["payment_id"] = payment_result.get("blockchainIdentifier")
+        
+        # Start monitoring payment status
         import asyncio
         asyncio.create_task(handle_payment_status(job_id, jobs))
         
-        # Return response in required format
+        # Return Masumi payment response
         return {
             "status": "success",
             "job_id": job_id,
-            "blockchainIdentifier": f"demo-blockchain-{job_id}",
-            "submitResultTime": "1650000000",
-            "unlockTime": "1650001000",
-            "externalDisputeUnlockTime": "1650002000",
-            "agentIdentifier": agent_identifier,
-            "sellerVkey": os.getenv("SELLER_VKEY", "demo-vkey"),
-            "identifierFromPurchaser": data.identifier_from_purchaser,
-            "input_hash": "demo-input-hash"
+            **payment_result,  # Includes blockchainIdentifier, submitResultTime, etc.
+            "identifierFromPurchaser": data.identifier_from_purchaser
         }
     except Exception as e:
         logger.error(f"Error in start_job: {str(e)}", exc_info=True)
