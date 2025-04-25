@@ -56,3 +56,26 @@ class HealthCheck(BaseModel):
     Response model for health check.
     """
     status: str  # "healthy", "unhealthy"
+
+class Amount(BaseModel):
+    """
+    Payment amount model.
+    """
+    amount: str
+    unit: str
+
+class StartJobResponse(BaseModel):
+    """
+    Response model for starting a job.
+    """
+    status: str
+    job_id: str
+    blockchainIdentifier: str
+    submitResultTime: int
+    unlockTime: int
+    externalDisputeUnlockTime: int
+    agentIdentifier: str
+    sellerVkey: str
+    identifierFromPurchaser: str
+    amounts: List[Amount]
+    input_hash: str
