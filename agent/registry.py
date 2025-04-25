@@ -1,6 +1,5 @@
 import os
 import logging
-from typing import Dict, Any, Optional
 from masumi.config import Config
 from masumi.registry import Agent
 from agent.config import update_env_file
@@ -25,7 +24,7 @@ async def ensure_agent_registration() -> bool:
             name="Truefact AI Agent",
             config=config,
             description="AI agent that generates factual responses",
-            example_output=[{"name": "factual_response", "mimeType": "application/json"}],
+            example_output=[{"url": f"https://{os.getenv('SERVER_NAME')}", "name": "factual_response", "mimeType": "application/json"}],
             tags=["AI", "Factual", "Truefact"],
             api_base_url=f"https://{os.getenv('SERVER_NAME')}",
             author_name="TrueFact",
@@ -49,6 +48,8 @@ async def ensure_agent_registration() -> bool:
             if status.get("exists", False):
                 logger.info("Agent already registered")
                 return True
+            else:
+                logger.info("Agent not registered, registering now...")
         
         # Register the agent
         result = await agent.register()
@@ -77,3 +78,10 @@ async def ensure_agent_registration() -> bool:
     except Exception as e:
         logger.error(f"Agent registration failed: {e}", exc_info=True)
         return False
+
+
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
+    import asyncio
+    asyncio.run(ensure_agent_registration())

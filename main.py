@@ -25,7 +25,7 @@ app = FastAPI(
     title="Truefact AI Agent API",
     description="API for running AI agent tasks with Masumi payment integration",
     version="1.0.0",
-    servers=[{"url": f"https://{os.getenv('SERVER_NAME', 6666)}"}]
+    servers=[{"url": f"https://{os.getenv('SERVER_NAME', 'localhost')}"}]
 )
 
 # Add CORS middleware
