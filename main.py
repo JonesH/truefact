@@ -1,7 +1,6 @@
 import os
 import uuid
 import logging
-from typing import Dict, Any, Callable, Awaitable
 
 import httpx
 from dotenv import load_dotenv
@@ -102,7 +101,7 @@ async def handle_payment_status(job_id: str, payment_id: str) -> None:
             payment_instances[job_id].stop_status_monitoring()
             del payment_instances[job_id]
 
-async def execute_ai_task(input_text: str, job_id: str) -> dict:
+async def execute_ai_task(input_text: str, job_id: str) -> str:
     """Execute the AI task with the given input"""
     # In a real implementation, this would call your AI service
     # For now, we'll return a simple confirmation
@@ -112,8 +111,7 @@ async def execute_ai_task(input_text: str, job_id: str) -> dict:
     async with httpx.AsyncClient() as client:
         response = await client.post(webhook_url, json=dict(text=input_text, job_id=job_id))
         response.raise_for_status()  # abort on HTTP errors
-        result = response.json()
-    return result
+        return response.text
 
 
 # Implement required endpoints
